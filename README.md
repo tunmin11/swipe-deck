@@ -1,4 +1,6 @@
-# Swipe Deck 💘
+<p align="center"><img src="assets/banner.png" alt="Swipe Deck: answer Claude Code's questions by swiping on your phone"></p>
+
+# Swipe Deck
 
 Answer Claude Code's questions by swiping cards on your phone, instead of typing in the terminal. Run `/swipe:swipe`, open one private page, swipe, and Claude carries on by itself.
 
@@ -21,6 +23,7 @@ Claude picks up your answers within about a minute. Use Remote Control if you wa
 - Claude Code signed in with `/login` on a plan with artifacts: Pro, Max, Ultra, Team or Enterprise
 - API key, Bedrock and Vertex sessions can't publish artifacts
 - Team and Enterprise owners can turn artifacts off
+- An interactive session, because `claude -p` doesn't have the artifact tools
 
 ## Privacy
 
@@ -35,6 +38,14 @@ While waiting for you, Claude checks for your answers with a short turn in your 
 - Cards are two-way choices, so decisions with more options may stay in the terminal
 - The page can't close itself after you lock in
 - Unfinished decks stay on the page's picker
+
+## Docs
+
+- [Beta guide](docs/beta-guide.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Changelog](CHANGELOG.md)
+
+Found a problem? [Send beta feedback](https://github.com/tunmin11/swipe-deck/issues/new?template=beta-feedback.md).
 
 ## License
 

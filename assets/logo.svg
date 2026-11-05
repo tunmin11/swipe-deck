@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Swipe Deck logo: two tilted cards with a double arrow</title>
+  <rect width="512" height="512" rx="112" fill="#ff5fa2"/>
+  <g stroke="#1d1233" stroke-width="16" stroke-linejoin="round">
+    <rect x="104" y="112" width="220" height="296" rx="38" fill="#ffe14d" transform="rotate(-13 214 260)"/>
+    <rect x="206" y="118" width="220" height="296" rx="38" fill="#1d1233" transform="rotate(9 316 266)"/>
+    <rect x="192" y="104" width="220" height="296" rx="38" fill="#fffaf0" transform="rotate(9 302 252)"/>
+  </g>
+  <g fill="none" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" transform="rotate(9 302 252)">
+    <path d="M238 196l58 56-58 56" stroke="#ff5fa2"/>
+    <path d="M304 196l58 56-58 56" stroke="#1d1233"/>
+  </g>
+</svg>

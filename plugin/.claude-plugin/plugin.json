@@ -1,7 +1,7 @@
 {
   "name": "swipe",
   "description": "Answer Claude's questions by swiping cards on your phone, through one private Claude page.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "keywords": [
     "questions",
@@ -13,5 +13,6 @@
     "name": "tunmin11"
   },
   "repository": "https://github.com/tunmin11/swipe-deck",
-  "homepage": "https://github.com/tunmin11/swipe-deck"
+  "homepage": "https://github.com/tunmin11/swipe-deck",
+  "icon": "./icon.png"
 }
