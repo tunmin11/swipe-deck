@@ -1,0 +1,17 @@
+{
+  "name": "swipe",
+  "description": "Answer Claude's questions by swiping cards on your phone, through one private Claude page.",
+  "version": "0.1.0",
+  "license": "MIT",
+  "keywords": [
+    "questions",
+    "decisions",
+    "mobile",
+    "remote-control"
+  ],
+  "author": {
+    "name": "tunmin11"
+  },
+  "repository": "https://github.com/tunmin11/swipe-deck",
+  "homepage": "https://github.com/tunmin11/swipe-deck"
+}

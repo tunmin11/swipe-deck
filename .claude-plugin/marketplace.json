@@ -1,0 +1,14 @@
+{
+  "name": "swipe-deck",
+  "description": "Swipe through Claude's questions on your phone.",
+  "owner": {
+    "name": "tunmin11"
+  },
+  "plugins": [
+    {
+      "name": "swipe",
+      "source": "./plugin",
+      "description": "Answer Claude's questions by swiping cards on your phone, through one private Claude page."
+    }
+  ]
+}

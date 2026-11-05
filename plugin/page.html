@@ -1,0 +1,502 @@
+<title>Swipe Deck</title>
+<!-- swipe-page-version: 2 -->
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@500;700;800&display=swap">
+<style>
+  /* Layout: one thumb-reach sticker card stacked over a row of chunky buttons, filling the phone screen. */
+  :root {
+    color-scheme: light;
+    --ground: #ff5fa2;
+    --sun: #ffe14d;
+    --ink: #1d1233;
+    --paper: #fffaf0;
+    --mint: #8ff0bd;
+    --coral: #ffb0a0;
+    --violet: #7b3df0;
+    --green: #067a45;
+    --red: #cf1f3f;
+    --muted: #5d5270;
+    --display: "Bagel Fat One", "Arial Black", system-ui, sans-serif;
+    --body: "Figtree", system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--ground); color: var(--ink); font-family: var(--body); font-weight: 500; overflow: hidden; overscroll-behavior: none; }
+  main {
+    height: 100%; max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px;
+    padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  header { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+  button { font: inherit; color: var(--ink); cursor: pointer; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 3px 3px 0 var(--ink); }
+  button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  button:focus-visible { outline: 3px solid var(--violet); outline-offset: 2px; }
+  button:disabled { opacity: .4; cursor: default; }
+  #undo { padding: 6px 12px; min-height: 40px; font-weight: 700; }
+  #stage { position: relative; flex: 1; min-height: 0; }
+  #card {
+    position: absolute; inset: 0 3px 5px 0; background: var(--paper); border: 3px solid var(--ink); border-radius: 26px; box-shadow: 5px 5px 0 var(--ink);
+    padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-x: hidden; overflow-y: auto; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+  }
+  #card > * { flex-shrink: 0; }
+  #card.fly { transition: transform .28s ease-out, opacity .28s ease-out; }
+  #card.back { transition: transform .22s cubic-bezier(.2, 1.4, .4, 1); }
+  #question { font-family: var(--display); font-weight: 400; font-size: clamp(27px, 8vw, 36px); line-height: 1.1; margin: 0; text-wrap: balance; overflow-wrap: anywhere; }
+  #question.long { font-size: 23px; }
+  #question.longer { font-family: var(--body); font-weight: 800; font-size: 18px; line-height: 1.25; }
+  #pick { align-self: flex-start; background: var(--sun); border: 2px solid var(--ink); padding: 4px 10px; border-radius: 99px; font-size: 14px; font-weight: 800; }
+  #note-preview { font-size: 15px; font-style: italic; color: var(--muted); overflow-wrap: anywhere; }
+  .tradeoffs { margin-top: auto; display: grid; gap: 8px; font-size: 16px; line-height: 1.35; }
+  .tradeoffs p { margin: 0; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 14px; overflow-wrap: anywhere; }
+  #pro { background: var(--mint); }
+  #con { background: var(--coral); }
+  .stamp { position: absolute; top: 20px; padding: 4px 12px; border: 4px solid; border-radius: 10px; background: var(--paper); font-family: var(--display); font-size: 28px; max-width: 80%; overflow-wrap: anywhere; opacity: 0; pointer-events: none; }
+  #stamp-yes { left: 16px; color: var(--green); transform: rotate(-12deg); }
+  #stamp-no { right: 16px; color: var(--red); transform: rotate(12deg); }
+  #stamp-up { left: 50%; color: var(--violet); transform: translateX(-50%); white-space: nowrap; }
+  #controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding-right: 3px; padding-bottom: 3px; }
+  #controls button { min-height: 66px; font-size: 13px; font-weight: 800; }
+  #controls span { display: block; font-size: 23px; }
+  #controls em { display: block; font-style: normal; overflow-wrap: anywhere; line-height: 1.1; }
+  #btn-yes { background: var(--mint); }
+  #btn-no { background: var(--coral); }
+  #btn-up { background: var(--sun); }
+  #done { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+  #done h1 { font-family: var(--display); font-weight: 400; font-size: 40px; line-height: 1.05; text-align: center; margin: 4px 0; text-wrap: balance; }
+  #summary { list-style: none; margin: 0; padding: 0 5px 5px 0; flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: 8px; align-content: start; }
+  #summary li { background: var(--paper); border: 2px solid var(--ink); padding: 10px 12px; border-radius: 14px; line-height: 1.3; overflow-wrap: anywhere; }
+  #summary b { display: block; font-weight: 800; }
+  #send { min-height: 56px; background: var(--sun); font-weight: 800; font-size: 18px; margin-right: 3px; margin-bottom: 3px; }
+  #status { min-height: 22px; text-align: center; margin: 0; font-weight: 700; }
+  #topic { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+  #next { min-height: 52px; font-weight: 800; margin-right: 3px; margin-bottom: 3px; }
+  #picker { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+  #picker h1 { font-family: var(--display); font-weight: 400; font-size: 34px; line-height: 1.1; margin: 4px 0; text-wrap: balance; }
+  #decks { list-style: none; margin: 0; padding: 0 5px 5px 0; flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: 10px; align-content: start; }
+  #decks button { width: 100%; padding: 12px; text-align: left; line-height: 1.3; overflow-wrap: anywhere; }
+  #decks b { display: block; font-weight: 800; font-size: 17px; }
+  #message.cooking::before { content: "🃏"; display: block; font-size: 64px; margin-bottom: 12px; animation: shuffle .8s ease-in-out infinite alternate; }
+  @keyframes shuffle { from { transform: rotate(-12deg) translateY(4px); } to { transform: rotate(12deg) translateY(-8px); } }
+  #message { flex: 1; display: grid; place-content: center; text-align: center; font-size: 20px; font-weight: 800; line-height: 1.3; padding: 16px; }
+  dialog { width: min(92vw, 440px); color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 20px; padding: 16px; }
+  dialog::backdrop { background: #1d123399; }
+  dialog form { display: grid; gap: 10px; }
+  dialog label { font-weight: 800; }
+  textarea { width: 100%; font: 500 16px var(--body); color: var(--ink); background: #fff; padding: 10px; border-radius: 12px; border: 2px solid var(--ink); }
+  dialog button { background: var(--sun); padding: 12px; font-weight: 800; }
+  .heart { position: fixed; bottom: -40px; font-size: 28px; pointer-events: none; animation: rise 2.4s ease-in forwards; }
+  @keyframes rise { to { transform: translateY(-110vh) rotate(25deg); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    #card.fly, #card.back { transition: none; }
+    #message.cooking::before { animation: none; }
+    .heart { display: none; }
+  }
+</style>
+
+<main>
+  <header>
+    <span id="progress" aria-live="polite"></span>
+    <button id="undo" type="button" disabled hidden>↩ undo</button>
+  </header>
+
+  <p id="topic" hidden></p>
+
+  <div id="message" role="status">Loading your cards…</div>
+
+  <section id="picker" hidden>
+    <h1>Pick a deck 🃏</h1>
+    <ul id="decks"></ul>
+  </section>
+
+  <div id="stage" hidden>
+    <article id="card">
+      <div id="stamp-yes" class="stamp" aria-hidden="true">BET</div>
+      <div id="stamp-no" class="stamp" aria-hidden="true">NAH</div>
+      <div id="stamp-up" class="stamp" aria-hidden="true">U DECIDE</div>
+      <span id="pick"></span>
+      <h1 id="question"></h1>
+      <div id="note-preview"></div>
+      <div class="tradeoffs">
+        <p id="pro"></p>
+        <p id="con"></p>
+      </div>
+    </article>
+  </div>
+
+  <div id="controls" hidden>
+    <button id="btn-no" type="button"><span aria-hidden="true">👈</span><em id="label-no">nah</em></button>
+    <button id="btn-up" type="button"><span aria-hidden="true">👆</span>u decide</button>
+    <button id="btn-note" type="button"><span aria-hidden="true">💬</span>note</button>
+    <button id="btn-yes" type="button"><span aria-hidden="true">👉</span><em id="label-yes">bet</em></button>
+  </div>
+
+  <section id="done" hidden>
+    <h1 id="done-title">All swiped 💘</h1>
+    <ul id="summary"></ul>
+    <p id="status" role="status"></p>
+    <button id="send" type="button">lock it in 🔒</button>
+    <button id="next" type="button" hidden>next deck 👉</button>
+  </section>
+</main>
+
+<dialog id="note-dialog">
+  <form id="note-form">
+    <label for="note-input">Tell Claude more</label>
+    <textarea id="note-input" rows="4" maxlength="2000"></textarea>
+    <button type="submit">save note</button>
+  </form>
+</dialog>
+
+<script>
+  const SWIPE_THRESHOLD = 90;
+  const FLY_MS = 280;
+  const LOAD_TIMEOUT_MS = 10000;
+  const LONG_QUESTION = 90;
+  const LONGER_QUESTION = 170;
+  const MAX_LABEL = 24;
+  const labelsFor = (question) => ({ yes: question?.yesLabel || "bet", no: question?.noLabel || "nah" });
+  const decisionText = (decision, question) => {
+    if (decision === "you_decide") return "u decide 👆";
+    return decision === "yes" ? `${labelsFor(question).yes} 👉` : `${labelsFor(question).no} 👈`;
+  };
+  const $ = (id) => document.getElementById(id);
+  const card = $("card");
+
+  const MAX_SESSIONS = 30;
+  const PREPARING_TIMEOUT_MS = 10 * 60 * 1000;
+  const PREPARING_RECHECK_MS = 30 * 1000;
+
+  let db = null;
+  let sessions = null;
+  let answerDocs = null;
+  let openedSession = null;
+  let answersRef = null;
+  let questions = [];
+  let answers = [];
+  let note = "";
+  let animating = false;
+  let sent = false;
+  let saving = false;
+  let saveAgain = false;
+  let recheckTimer = null;
+  const reportedBroken = new Set();
+
+  const show = (view) => {
+    $("message").hidden = view !== "message";
+    $("picker").hidden = view !== "picker";
+    $("stage").hidden = view !== "card";
+    $("controls").hidden = view !== "card";
+    $("done").hidden = view !== "done";
+    $("undo").hidden = view === "message" || view === "picker" || sent;
+    $("topic").hidden = view === "message" || view === "picker";
+  };
+
+  const showMessage = (text) => {
+    $("message").className = "";
+    $("message").textContent = text;
+    $("progress").textContent = "";
+    show("message");
+  };
+
+  const showStatus = (text) => { $("status").textContent = text; };
+
+  // Saves after every swipe, so closing the app mid-deck loses nothing.
+  const saveProgress = async () => {
+    if (saving) { saveAgain = true; return; }
+    saving = true;
+    try {
+      do {
+        saveAgain = false;
+        await answersRef.set({ answers: [...answers], sent: false, createdAt: openedSession.createdAt });
+      } while (saveAgain);
+    } catch (error) {
+      showStatus(`Couldn't save your swipes: ${error.message}`);
+    } finally {
+      saving = false;
+    }
+  };
+
+  const celebrate = () => {
+    for (let i = 0; i < 18; i++) {
+      const heart = document.createElement("div");
+      heart.className = "heart";
+      heart.textContent = "💘";
+      heart.setAttribute("aria-hidden", "true");
+      heart.style.left = `${Math.random() * 100}vw`;
+      heart.style.animationDelay = `${Math.random() * 0.8}s`;
+      document.body.append(heart);
+      heart.addEventListener("animationend", () => heart.remove());
+    }
+  };
+
+  const setStamps = (dx, dy) => {
+    const up = dy < 0 && Math.abs(dy) > Math.abs(dx);
+    $("stamp-yes").style.opacity = !up && dx > 0 ? Math.min(dx / SWIPE_THRESHOLD, 1) : 0;
+    $("stamp-no").style.opacity = !up && dx < 0 ? Math.min(-dx / SWIPE_THRESHOLD, 1) : 0;
+    $("stamp-up").style.opacity = up ? Math.min(-dy / SWIPE_THRESHOLD, 1) : 0;
+  };
+
+  const showSummary = () => {
+    show("done");
+    $("done-title").textContent = sent ? "Locked in 🔒" : "All swiped 💘";
+    $("progress").textContent = answers.length === 1 ? "1 decision" : `${answers.length} decisions`;
+    const items = answers.map((answer, index) => {
+      const item = document.createElement("li");
+      const title = document.createElement("b");
+      title.textContent = decisionText(answer.decision, questions[index]);
+      item.append(title, questions[index]?.question ?? "");
+      if (answer.note) item.append(` — "${answer.note}"`);
+      return item;
+    });
+    $("summary").replaceChildren(...items);
+    $("send").hidden = sent;
+    if (sent) showStatus("Claude's on it. You can close this now. ✌️");
+    updateNextButton();
+  };
+
+  const render = () => {
+    $("undo").disabled = answers.length === 0;
+    const current = questions[answers.length];
+    if (!current) { showSummary(); return; }
+
+    show("card");
+    $("progress").textContent = `${answers.length + 1} of ${questions.length}`;
+    $("question").textContent = current.question;
+    const labels = labelsFor(current);
+    $("pick").textContent = `claude's pick: ${decisionText(current.pick, current)}`;
+    $("label-yes").textContent = labels.yes;
+    $("label-no").textContent = labels.no;
+    $("stamp-yes").textContent = labels.yes.toUpperCase();
+    $("stamp-no").textContent = labels.no.toUpperCase();
+    $("question").className = current.question.length > LONGER_QUESTION ? "longer" : current.question.length > LONG_QUESTION ? "long" : "";
+    $("pro").textContent = `✓ ${current.pro}`;
+    $("con").textContent = `✗ ${current.con}`;
+    $("note-preview").textContent = note ? `💬 ${note}` : "";
+    card.className = "";
+    card.style.transform = "";
+    card.style.opacity = "";
+    setStamps(0, 0);
+    card.scrollTop = 0;
+    // A card too long to fit scrolls instead, so its swipe up gives way and the u decide button stays.
+    card.style.touchAction = card.scrollHeight > card.clientHeight ? "pan-y" : "none";
+  };
+
+  const decide = (decision) => {
+    const current = questions[answers.length];
+    if (animating || !current) return;
+    animating = true;
+    const answer = { id: current.id, decision };
+    if (note) answer.note = note;
+    const customLabel = decision === "yes" ? current.yesLabel : decision === "no" ? current.noLabel : undefined;
+    if (customLabel) answer.label = customLabel;
+    const flyTo = {
+      yes: "translateX(130vw) rotate(24deg)",
+      no: "translateX(-130vw) rotate(-24deg)",
+      you_decide: "translateY(-130vh)",
+    }[decision];
+    setStamps(decision === "yes" ? 200 : decision === "no" ? -200 : 0, decision === "you_decide" ? -200 : 0);
+    card.className = "fly";
+    card.style.transform = flyTo;
+    card.style.opacity = "0";
+    setTimeout(() => {
+      answers.push(answer);
+      note = "";
+      animating = false;
+      render();
+      if (answers.length === questions.length) celebrate();
+      void saveProgress();
+    }, FLY_MS);
+  };
+
+  let drag = null;
+  card.addEventListener("pointerdown", (event) => {
+    if (animating) return;
+    drag = { x: event.clientX, y: event.clientY };
+    card.className = "";
+    card.setPointerCapture(event.pointerId);
+  });
+  card.addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    card.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx / 14}deg)`;
+    setStamps(dx, dy);
+  });
+  const endDrag = (event) => {
+    if (!drag) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    drag = null;
+    if (event.type === "pointerup" && -dy > SWIPE_THRESHOLD && -dy > Math.abs(dx)) { decide("you_decide"); return; }
+    if (event.type === "pointerup" && dx > SWIPE_THRESHOLD) { decide("yes"); return; }
+    if (event.type === "pointerup" && dx < -SWIPE_THRESHOLD) { decide("no"); return; }
+    card.className = "back";
+    card.style.transform = "";
+    setStamps(0, 0);
+  };
+  card.addEventListener("pointerup", endDrag);
+  card.addEventListener("pointercancel", endDrag);
+
+  $("btn-yes").addEventListener("click", () => decide("yes"));
+  $("btn-no").addEventListener("click", () => decide("no"));
+  $("btn-up").addEventListener("click", () => decide("you_decide"));
+  $("btn-note").addEventListener("click", () => {
+    $("note-input").value = note;
+    $("note-dialog").showModal();
+  });
+  $("note-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    note = $("note-input").value.trim();
+    $("note-preview").textContent = note ? `💬 ${note}` : "";
+    $("note-dialog").close();
+  });
+  $("undo").addEventListener("click", () => {
+    if (animating || answers.length === 0) return;
+    note = answers.pop().note ?? "";
+    showStatus("");
+    render();
+    void saveProgress();
+  });
+
+  $("send").addEventListener("click", async () => {
+    $("send").disabled = true;
+    $("undo").disabled = true;
+    showStatus("Locking it in…");
+    try {
+      while (saving) await new Promise((done) => setTimeout(done, 50));
+      await answersRef.set({ answers: [...answers], sent: true, createdAt: openedSession.createdAt });
+      sent = true;
+      showSummary();
+    } catch (error) {
+      showStatus(`Didn't save: ${error.message}. Tap to try again.`);
+      $("send").disabled = false;
+      $("undo").disabled = false;
+    }
+  });
+
+  const isValidQuestion = (q) => ["id", "question", "pro", "con"].every((key) => typeof q?.[key] === "string" && q[key]) && (q.pick === "yes" || q.pick === "no") && [q.yesLabel, q.noLabel].every((label) => label === undefined || (typeof label === "string" && label.length > 0 && label.length <= MAX_LABEL));
+
+  const isValidSession = (session) => typeof session.createdAt === "string" && Array.isArray(session.questions) && session.questions.length > 0 && session.questions.every(isValidQuestion);
+
+  const isPreparing = (session) => session.status === "preparing" && Date.now() - Date.parse(session.createdAt) < PREPARING_TIMEOUT_MS;
+
+  const isRecentlyBroken = (session) => !isValidSession(session) && session.status !== "preparing" && Date.now() - Date.parse(session.createdAt) < PREPARING_TIMEOUT_MS;
+
+  // Tells Claude through its own answers document, because Claude checks that while it waits.
+  const reportBrokenDecks = async () => {
+    for (const session of sessions.filter(isRecentlyBroken)) {
+      if (answerDocs.has(session.id) || reportedBroken.has(session.id)) continue;
+      reportedBroken.add(session.id);
+      const badCard = Array.isArray(session.questions) ? session.questions.find((question) => !isValidQuestion(question)) : null;
+      const error = `Deck rejected by the page. First bad card: ${badCard?.id ?? "no questions array"}`;
+      try {
+        await db.doc(`answers/${session.id}`).set({ answers: [], sent: false, createdAt: session.createdAt, error });
+      } catch (writeError) {
+        showMessage(`Couldn't report a broken deck: ${writeError.message}`);
+      }
+    }
+  };
+
+  const showCooking = () => {
+    $("message").className = "cooking";
+    $("message").textContent = "Claude's cooking your cards. They'll show up here by themselves.";
+    $("progress").textContent = "";
+    show("message");
+    recheckTimer = setTimeout(route, PREPARING_RECHECK_MS);
+  };
+
+  const pendingSessions = () => sessions.filter((session) => isValidSession(session) && answerDocs.get(session.id)?.sent !== true);
+
+  function updateNextButton() {
+    const others = sessions && answerDocs ? pendingSessions().filter((session) => session.id !== openedSession?.id) : [];
+    $("next").hidden = !sent || others.length === 0;
+  }
+
+  const openSession = (session) => {
+    openedSession = session;
+    answersRef = db.doc(`answers/${session.id}`);
+    questions = session.questions;
+    note = "";
+    const saved = answerDocs.get(session.id);
+    const savedAnswers = Array.isArray(saved?.answers) ? saved.answers : [];
+    const matches = savedAnswers.length <= questions.length && savedAnswers.every((answer, i) => answer?.id === questions[i]?.id);
+    answers = matches ? savedAnswers.map((answer) => ({ ...answer })) : [];
+    sent = false;
+    $("topic").textContent = typeof session.topic === "string" ? session.topic : "";
+    $("send").disabled = false;
+    showStatus("");
+    render();
+  };
+
+  const showPicker = (pending) => {
+    $("progress").textContent = `${pending.length} waiting`;
+    const items = pending.map((session) => {
+      const item = document.createElement("li");
+      const button = document.createElement("button");
+      const title = document.createElement("b");
+      button.type = "button";
+      title.textContent = typeof session.topic === "string" && session.topic ? session.topic : "Untitled deck";
+      button.append(title, session.questions.length === 1 ? "1 card" : `${session.questions.length} cards`);
+      button.addEventListener("click", () => openSession(session));
+      item.append(button);
+      return item;
+    });
+    $("decks").replaceChildren(...items);
+    show("picker");
+  };
+
+  // Runs whenever data changes, but never pulls someone out of a deck they've opened.
+  function route() {
+    if (!sessions || !answerDocs) return;
+    clearTimeout(recheckTimer);
+    void reportBrokenDecks();
+    updateNextButton();
+    if (openedSession) return;
+    const newest = sessions.find((session) => answerDocs.get(session.id)?.sent !== true && (isValidSession(session) || isPreparing(session)));
+    if (newest && isPreparing(newest)) { showCooking(); return; }
+    const pending = pendingSessions();
+    if (pending.length > 1) { showPicker(pending); return; }
+    if (pending.length === 1) { openSession(pending[0]); return; }
+    const broken = sessions.some(isRecentlyBroken);
+    showMessage(broken ? "A deck came through broken. Claude's been told and can send it again." : "No cards waiting. Keep this page open and new ones will land here. 🛋️");
+  }
+
+  $("next").addEventListener("click", () => {
+    openedSession = null;
+    sent = false;
+    route();
+  });
+
+  const start = async () => {
+    db = await window.claude?.use?.("db");
+    if (!db) {
+      showMessage("Open this page in Claude while signed in, so your swipes can be saved.");
+      return;
+    }
+
+    const slowLoad = setTimeout(() => {
+      if (!sessions || !answerDocs) showMessage("Can't reach your cards yet. Check your connection.");
+    }, LOAD_TIMEOUT_MS);
+
+    const onLoadError = (error) => {
+      clearTimeout(slowLoad);
+      showMessage(`Couldn't load the cards: ${error.message}`);
+    };
+
+    // Waits for confirmed data, so a stale cached copy can't reopen a finished deck.
+    db.collection("sessions").orderBy("createdAt", "desc").limit(MAX_SESSIONS).onSnapshot((snapshot) => {
+      if (snapshot.metadata.fromCache) return;
+      clearTimeout(slowLoad);
+      sessions = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      route();
+    }, onLoadError);
+
+    db.collection("answers").orderBy("createdAt", "desc").limit(MAX_SESSIONS).onSnapshot((snapshot) => {
+      if (snapshot.metadata.fromCache) return;
+      answerDocs = new Map(snapshot.docs.map((doc) => [doc.id, doc.data()]));
+      route();
+    }, onLoadError);
+  };
+
+  void start();
+</script>
